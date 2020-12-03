@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
 public final class BigtableTableAdminSettings {
 
   private static final Logger LOGGER = Logger.getLogger(BigtableTableAdminSettings.class.getName());
-  static final String BIGTABLE_EMULATOR_HOST_ENV_VAR = "BIGTABLE_EMULATOR_HOST";
+  static final String BIGTABLE_EMULATOR_HOST_VAR = "BIGTABLE_EMULATOR_HOST";
 
   private final String projectId;
   private final String instanceId;
@@ -135,7 +135,10 @@ public final class BigtableTableAdminSettings {
    * creates a builder preconfigured to connect to Bigtable using emulator hostname and port number.
    */
   public static Builder newBuilder() {
-    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_ENV_VAR);
+    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_VAR);
+    if (Strings.isNullOrEmpty(hostAndPort)) {
+      hostAndPort = System.getProperty("BIGTABLE_EMULATOR_HOST_VAR")
+    }
     if (!Strings.isNullOrEmpty(hostAndPort)) {
       int port;
       try {
@@ -144,8 +147,8 @@ public final class BigtableTableAdminSettings {
       } catch (NumberFormatException | IndexOutOfBoundsException ex) {
         throw new RuntimeException(
             "Invalid host/port in "
-                + BIGTABLE_EMULATOR_HOST_ENV_VAR
-                + " environment variable: "
+                + BIGTABLE_EMULATOR_HOST_VAR
+                + " variable: "
                 + hostAndPort);
       }
     }
