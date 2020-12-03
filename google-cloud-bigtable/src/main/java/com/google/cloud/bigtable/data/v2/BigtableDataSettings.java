@@ -65,7 +65,7 @@ import org.threeten.bp.Duration;
 public final class BigtableDataSettings {
 
   private static final Logger LOGGER = Logger.getLogger(BigtableDataSettings.class.getName());
-  private static final String BIGTABLE_EMULATOR_HOST_ENV_VAR = "BIGTABLE_EMULATOR_HOST";
+  private static final String BIGTABLE_EMULATOR_HOST_VAR = "BIGTABLE_EMULATOR_HOST";
 
   private final EnhancedBigtableStubSettings stubSettings;
 
@@ -76,11 +76,15 @@ public final class BigtableDataSettings {
   /**
    * Create a new builder.
    *
-   * <p>If emulator configuration provided in BIGTABLE_EMULATOR_HOST environment variable then it
-   * creates a builder preconfigured to connect to Bigtable using emulator hostname and port number.
+   * <p>If emulator configuration provided in BIGTABLE_EMULATOR_HOST environment variable or in
+   * BIGTABLE_EMULATOR_HOST Java System Property then it creates a builder preconfigured 
+   * to connect to Bigtable using emulator hostname and port number.
    */
   public static Builder newBuilder() {
-    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_ENV_VAR);
+    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_VAR);
+    if (Strings.isNullOrEmpty(hostAndPort)) {
+      hostAndPort = System.getProperty("BIGTABLE_EMULATOR_HOST_VAR")
+    }
     if (!Strings.isNullOrEmpty(hostAndPort)) {
       try {
         int lastIndexOfCol = hostAndPort.lastIndexOf(":");
@@ -89,8 +93,8 @@ public final class BigtableDataSettings {
       } catch (NumberFormatException | IndexOutOfBoundsException ex) {
         throw new RuntimeException(
             "Invalid host/port in "
-                + BIGTABLE_EMULATOR_HOST_ENV_VAR
-                + " environment variable: "
+                + BIGTABLE_EMULATOR_HOST_VAR
+                + " variable: "
                 + hostAndPort);
       }
     }
