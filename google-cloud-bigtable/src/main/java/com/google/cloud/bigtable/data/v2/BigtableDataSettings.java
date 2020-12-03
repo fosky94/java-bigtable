@@ -13,84 +13,142 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.cloud.bigtable.data.v2;
+package com.google.cloud.bigtable.admin.v2;
 
 import com.google.api.core.ApiFunction;
-import com.google.api.core.BetaApi;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
-import com.google.api.gax.rpc.UnaryCallSettings;
-import com.google.cloud.bigtable.data.v2.models.Query;
-import com.google.cloud.bigtable.data.v2.models.Row;
-import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStubSettings;
+import com.google.cloud.bigtable.admin.v2.stub.BigtableTableAdminStubSettings;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.base.Verify;
 import io.grpc.ManagedChannelBuilder;
-import java.util.List;
+import java.io.IOException;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-import org.threeten.bp.Duration;
+import javax.annotation.Nullable;
 
 /**
- * Settings class to configure an instance of {@link BigtableDataClient}.
+ * Settings class to configure an instance of {@link BigtableTableAdminClient}.
  *
- * <p>Sane defaults are provided for most settings:
+ * <p>It must be configured with a project ID and instance ID.
  *
- * <ul>
- *   <li>The default service address (bigtable.googleapis.com) and default port (443) are used.
- *   <li>The transport provider is configured with a channel pool that contains twice as many
- *       connections as CPUs.
- *   <li>Credentials are acquired automatically through Application Default Credentials.
- *   <li>Retries are configured for idempotent methods but not for non-idempotent methods.
- * </ul>
- *
- * <p>The only required setting is the instance name.
- *
- * <p>The builder of this class is recursive, so contained classes are themselves builders. When
- * build() is called, the tree of builders is called to create the complete settings object.
+ * <p>Example usage:
  *
  * <pre>{@code
- * BigtableDataSettings.Builder settingsBuilder = BigtableDataSettings.newBuilder()
+ * BigtableTableAdminSettings.Builder tableAdminSettingsBuilder = BigtableTableAdminSettings.newBuilder()
  *   .setProjectId("my-project")
- *   .setInstanceId("my-instance-id")
- *   .setAppProfileId("default");
+ *   .setInstanceId("my-instance");
  *
- * BigtableDataSettings settings = builder.build();
+ * tableAdminSettingsBuilder.stubSettings().createTableSettings()
+ *   .setRetrySettings(
+ *     RetrySettings.newBuilder()
+ *       .setTotalTimeout(Duration.ofMinutes(15))
+ *       .build());
+ *
+ * BigtableTableAdminSettings tableAdminSettings = tableAdminSettingsBuilder.build();
  * }</pre>
- *
- * <p>For fine grained control of individual RPCs, please refer to {@link
- * EnhancedBigtableStubSettings}, which is exposed as {@link Builder#stubSettings()}.
  */
-public final class BigtableDataSettings {
+public final class BigtableTableAdminSettings {
 
-  private static final Logger LOGGER = Logger.getLogger(BigtableDataSettings.class.getName());
-  private static final String BIGTABLE_EMULATOR_HOST_ENV_VAR = "BIGTABLE_EMULATOR_HOST";
+  private static final Logger LOGGER = Logger.getLogger(BigtableTableAdminSettings.class.getName());
+  static final String BIGTABLE_EMULATOR_HOST_VAR = "BIGTABLE_EMULATOR_HOST";
 
-  private final EnhancedBigtableStubSettings stubSettings;
+  private final String projectId;
+  private final String instanceId;
+  private final BigtableTableAdminStubSettings stubSettings;
 
-  private BigtableDataSettings(Builder builder) {
-    stubSettings = builder.stubSettings().build();
+  private BigtableTableAdminSettings(Builder builder) throws IOException {
+    this.projectId = Preconditions.checkNotNull(builder.projectId, "Project ID must be set");
+    this.instanceId = Preconditions.checkNotNull(builder.instanceId, "Instance ID must be set");
+    this.stubSettings =
+        Verify.verifyNotNull(builder.stubSettings, "stubSettings should never be null").build();
+  }
+
+  /** Gets the project ID of instance whose tables the client will manage. */
+  public String getProjectId() {
+    return projectId;
+  }
+
+  /** Gets the instance ID whose tables the client will manage. */
+  public String getInstanceId() {
+    return instanceId;
+  }
+
+  /** Gets the credentials provider to use for getting the credentials to make calls with. */
+  public CredentialsProvider getCredentialsProvider() {
+    return stubSettings.getCredentialsProvider();
+  }
+
+  /** Gets the underlying RPC settings. */
+  public BigtableTableAdminStubSettings getStubSettings() {
+    return stubSettings;
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("projectId", projectId)
+        .add("instanceId", instanceId)
+        .add("createTableSettings", stubSettings.createTableSettings())
+        .add("createTableFromSnapshotSettings", stubSettings.createTableFromSnapshotSettings())
+        .add(
+            "createTableFromSnapshotOperationSettings",
+            stubSettings.createTableFromSnapshotOperationSettings())
+        .add("listTablesSettings", stubSettings.listTablesSettings())
+        .add("getTableSettings", stubSettings.getTableSettings())
+        .add("deleteTableSettings", stubSettings.deleteTableSettings())
+        .add("modifyColumnFamiliesSettings", stubSettings.modifyColumnFamiliesSettings())
+        .add("dropRowRangeSettings", stubSettings.dropRowRangeSettings())
+        .add("generateConsistencyTokenSettings", stubSettings.generateConsistencyTokenSettings())
+        .add("checkConsistencySettings", stubSettings.checkConsistencySettings())
+        .add("getIamPolicySettings", stubSettings.getIamPolicySettings())
+        .add("setIamPolicySettings", stubSettings.setIamPolicySettings())
+        .add("testIamPermissionsSettings", stubSettings.testIamPermissionsSettings())
+        .add("snapshotTableSettings", stubSettings.snapshotTableSettings())
+        .add("snapshotTableOperationSettings", stubSettings.snapshotTableOperationSettings())
+        .add("getSnapshotSettings", stubSettings.getSnapshotSettings())
+        .add("listSnapshotsSettings", stubSettings.listSnapshotsSettings())
+        .add("deleteSnapshotSettings", stubSettings.deleteSnapshotSettings())
+        .add("createBackupSettings", stubSettings.createBackupSettings())
+        .add("createBackupOperationSettings", stubSettings.createBackupOperationSettings())
+        .add("getBackupSettings", stubSettings.getBackupSettings())
+        .add("listBackupsSettings", stubSettings.listBackupsSettings())
+        .add("updateBackupSettings", stubSettings.updateBackupSettings())
+        .add("deleteBackupSettings", stubSettings.deleteBackupSettings())
+        .add("restoreTableSettings", stubSettings.restoreTableSettings())
+        .add("restoreTableOperationSettings", stubSettings.restoreTableOperationSettings())
+        .add("stubSettings", stubSettings)
+        .toString();
+  }
+
+  /** Returns a builder containing all the values of this settings class. */
+  public Builder toBuilder() {
+    return new Builder(this);
   }
 
   /**
-   * Create a new builder.
+   * Returns a new builder for this class.
    *
    * <p>If emulator configuration provided in BIGTABLE_EMULATOR_HOST environment variable then it
    * creates a builder preconfigured to connect to Bigtable using emulator hostname and port number.
    */
   public static Builder newBuilder() {
-    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_ENV_VAR);
+    String hostAndPort = System.getenv(BIGTABLE_EMULATOR_HOST_VAR);
+    if (Strings.isNullOrEmpty(hostAndPort)) {
+      hostAndPort = System.getProperty("BIGTABLE_EMULATOR_HOST_VAR")
+    }
     if (!Strings.isNullOrEmpty(hostAndPort)) {
+      int port;
       try {
-        int lastIndexOfCol = hostAndPort.lastIndexOf(":");
-        int port = Integer.parseInt(hostAndPort.substring(lastIndexOfCol + 1));
-        return newBuilderForEmulator(hostAndPort.substring(0, lastIndexOfCol), port);
+        port = Integer.parseInt(hostAndPort.substring(hostAndPort.lastIndexOf(":") + 1));
+        return newBuilderForEmulator(hostAndPort.substring(0, hostAndPort.lastIndexOf(":")), port);
       } catch (NumberFormatException | IndexOutOfBoundsException ex) {
         throw new RuntimeException(
             "Invalid host/port in "
-                + BIGTABLE_EMULATOR_HOST_ENV_VAR
-                + " environment variable: "
+                + BIGTABLE_EMULATOR_HOST_VAR
+                + " variable: "
                 + hostAndPort);
       }
     }
@@ -103,8 +161,8 @@ public final class BigtableDataSettings {
   }
 
   /**
-   * Creates a new builder preconfigured to connect to the Bigtable emulator with a host name and
-   * port number.
+   * Creates a new builder preconfigured to connect to the Bigtable emulator with host name and port
+   * number.
    */
   public static Builder newBuilderForEmulator(String hostname, int port) {
     Builder builder = new Builder();
@@ -115,7 +173,6 @@ public final class BigtableDataSettings {
         .setEndpoint(hostname + ":" + port)
         .setTransportChannelProvider(
             InstantiatingGrpcChannelProvider.newBuilder()
-                .setMaxInboundMessageSize(256 * 1024 * 1024)
                 .setPoolSize(1)
                 .setChannelConfigurator(
                     new ApiFunction<ManagedChannelBuilder, ManagedChannelBuilder>() {
@@ -124,253 +181,78 @@ public final class BigtableDataSettings {
                         return input.usePlaintext();
                       }
                     })
-                .setKeepAliveTime(Duration.ofSeconds(30)) // sends ping in this interval
-                .setKeepAliveTimeout(
-                    Duration.ofSeconds(10)) // wait this long before considering the connection dead
                 .build());
 
     LOGGER.info("Connecting to the Bigtable emulator at " + hostname + ":" + port);
     return builder;
   }
 
-  /**
-   * Enables OpenCensus metric aggregations.
-   *
-   * <p>This will register Bigtable client relevant {@link io.opencensus.stats.View}s. When coupled
-   * with an exporter, it allows users to monitor client behavior.
-   *
-   * <p>Please note that in addition to calling this method, the application must:
-   * <ul>
-   *   <li>Include openensus-impl dependency on the classpath
-   *   <li>Configure an exporter like opencensus-exporter-stats-stackdriver
-   * </ul>
-   *
-   * <p>Example usage for maven:
-   * <pre>{@code
-   *   <dependency>
-   *     <groupId>io.opencensus</groupId>
-   *     <artifactId>opencensus-impl</artifactId>
-   *     <version>${opencensus.version}</version>
-   *     <scope>runtime</scope>
-   *   </dependency>
-   *
-   *   <dependency>
-   *     <groupId>io.opencensus</groupId>
-   *     <artifactId>opencensus-exporter-stats-stackdriver</artifactId>
-   *     <version>${opencensus.version}</version>
-   *   </dependency>
-   * </pre>
-   *
-   * Java:
-   * <pre>{@code
-   *   StackdriverStatsExporter.createAndRegister();
-   *   BigtableDataSettings.enableOpenCensusStats();
-   * }</pre>
-   */
-  @BetaApi("OpenCensus stats integration is currently unstable and may change in the future")
-  public static void enableOpenCensusStats() {
-    com.google.cloud.bigtable.data.v2.stub.metrics.RpcViews.registerBigtableClientViews();
-    // TODO(igorbernstein): Enable grpc views once we upgrade to grpc-java 1.24.0
-    // Required change: https://github.com/grpc/grpc-java/pull/5996
-    // io.opencensus.contrib.grpc.metrics.RpcViews.registerClientGrpcBasicViews();
-  }
+  /** Builder for BigtableTableAdminSettings. */
+  public static final class Builder {
+    @Nullable private String projectId;
+    @Nullable private String instanceId;
+    private final BigtableTableAdminStubSettings.Builder stubSettings;
 
-  /** Returns the target project id. */
-  public String getProjectId() {
-    return stubSettings.getProjectId();
-  }
-
-  /** Returns the target instance id. */
-  public String getInstanceId() {
-    return stubSettings.getInstanceId();
-  }
-
-  /** Returns the configured AppProfile id to use. */
-  public String getAppProfileId() {
-    return stubSettings.getAppProfileId();
-  }
-
-  /** Gets if channels will gracefully refresh connections to Cloud Bigtable service */
-  @BetaApi("Channel priming is not currently stable and may change in the future")
-  public boolean isRefreshingChannel() {
-    return stubSettings.isRefreshingChannel();
-  }
-
-  /**
-   * Gets the table ids that will be used to send warmup requests when {@link
-   * #isRefreshingChannel()} is enabled.
-   */
-  @BetaApi("Channel priming is not currently stable and may change in the future")
-  public List<String> getPrimingTableIds() {
-    return stubSettings.getPrimedTableIds();
-  }
-
-  /** Returns the underlying RPC settings. */
-  public EnhancedBigtableStubSettings getStubSettings() {
-    return stubSettings;
-  }
-
-  /** Returns the object with the settings used for point reads via ReadRow. */
-  public UnaryCallSettings<Query, Row> readRowSettings() {
-    return stubSettings.readRowSettings();
-  }
-
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this).add("stubSettings", stubSettings).toString();
-  }
-
-  /** Returns a builder containing all the values of this settings class. */
-  public Builder toBuilder() {
-    return new Builder(this);
-  }
-
-  /** Builder for BigtableDataSettings. */
-  public static class Builder {
-    private final EnhancedBigtableStubSettings.Builder stubSettings;
-    /**
-     * Initializes a new Builder with sane defaults for all settings.
-     *
-     * <p>Most defaults are extracted from {@link
-     * com.google.cloud.bigtable.data.v2.stub.BigtableStubSettings}, however some of the more
-     * complex defaults are configured explicitly here. Once the overlayed defaults are configured,
-     * the base settings are augmented to work with overlayed functionality (like disabling retries
-     * in the underlying GAPIC client for batching).
-     */
     private Builder() {
-      stubSettings = EnhancedBigtableStubSettings.newBuilder();
+      stubSettings = BigtableTableAdminStubSettings.newBuilder();
     }
 
-    private Builder(BigtableDataSettings settings) {
-      stubSettings = settings.getStubSettings().toBuilder();
+    private Builder(BigtableTableAdminSettings settings) {
+      this.projectId = settings.projectId;
+      this.instanceId = settings.instanceId;
+      this.stubSettings = settings.stubSettings.toBuilder();
     }
 
-    // <editor-fold desc="Public API">
-    /**
-     * Sets the target project. This setting is required. All RPCs will be made in the context of
-     * this setting.
-     */
-    public Builder setProjectId(@Nonnull String projectId) {
-      stubSettings.setProjectId(projectId);
+    /** Sets the project ID of the instance whose tables the client will manage. */
+    public Builder setProjectId(@Nullable String projectId) {
+      Preconditions.checkNotNull(projectId);
+      this.projectId = projectId;
       return this;
     }
 
-    /** Gets the project id that was previously set on this Builder. */
+    /** Gets the project ID of the instance whose tables the client will manage. */
+    @Nullable
     public String getProjectId() {
-      return stubSettings.getProjectId();
+      return projectId;
     }
 
-    /**
-     * Sets the target instance. This setting is required. All RPCs will be made in the context of
-     * this setting.
-     */
-    public Builder setInstanceId(@Nonnull String instanceId) {
-      stubSettings.setInstanceId(instanceId);
+    /** Sets the instance ID of the instance whose tables the client will manage. */
+    public Builder setInstanceId(@Nullable String instanceId) {
+      Preconditions.checkNotNull(instanceId);
+      this.instanceId = instanceId;
       return this;
     }
 
-    /** Gets the instance id that was previously set on this Builder. */
+    /** Gets the instance ID of the instance whose tables the client will manage. */
+    @Nullable
     public String getInstanceId() {
-      return stubSettings.getInstanceId();
+      return instanceId;
     }
 
-    /**
-     * Sets the AppProfile to use.
-     *
-     * <p>An application profile (sometimes also shortened to "app profile") is a group of
-     * configuration parameters for an individual use case. A client will identify itself with an
-     * application profile ID at connection time, and the requests will be handled according to that
-     * application profile.
-     */
-    public Builder setAppProfileId(@Nonnull String appProfileId) {
-      stubSettings.setAppProfileId(appProfileId);
-      return this;
-    }
-
-    /**
-     * Resets the AppProfile id to the default for the instance.
-     *
-     * <p>An application profile (sometimes also shortened to "app profile") is a group of
-     * configuration parameters for an individual use case. A client will identify itself with an
-     * application profile ID at connection time, and the requests will be handled according to that
-     * application profile.
-     *
-     * <p>Every Bigtable Instance has a default application profile associated with it, this method
-     * configures the client to use it.
-     */
-    public Builder setDefaultAppProfileId() {
-      stubSettings.setDefaultAppProfileId();
-      return this;
-    }
-
-    /** Gets the app profile id that was previously set on this Builder. */
-    public String getAppProfileId() {
-      return stubSettings.getAppProfileId();
-    }
-
-    /** Sets the CredentialsProvider to use for getting the credentials to make calls with. */
+    /** Sets the credentials provider to use for getting the credentials to make calls with. */
     public Builder setCredentialsProvider(CredentialsProvider credentialsProvider) {
       stubSettings.setCredentialsProvider(credentialsProvider);
       return this;
     }
 
-    /** Gets the CredentialsProvider to use for getting the credentials to make calls with. */
+    /** Gets the credentials provider to use for getting the credentials to make calls with. */
     public CredentialsProvider getCredentialsProvider() {
       return stubSettings.getCredentialsProvider();
     }
 
     /**
-     * Configure periodic gRPC channel refreshes.
+     * Returns the builder for the settings used for all RPCs.
      *
-     * <p>This feature will gracefully refresh connections to the Cloud Bigtable service. This is an
-     * experimental feature to address tail latency caused by the service dropping long lived gRPC
-     * connections, which causes the client to renegotiate the gRPC connection in the request path,
-     * which causes periodic spikes in latency
+     * <p>This is meant for advanced usage. The default RPC settings are set to their recommended
+     * values.
      */
-    @BetaApi("Channel priming is not currently stable and may change in the future")
-    public Builder setRefreshingChannel(boolean isRefreshingChannel) {
-      stubSettings.setRefreshingChannel(isRefreshingChannel);
-      return this;
-    }
-
-    /** Gets if channels will gracefully refresh connections to Cloud Bigtable service */
-    @BetaApi("Channel priming is not currently stable and may change in the future")
-    public boolean isRefreshingChannel() {
-      return stubSettings.isRefreshingChannel();
-    }
-
-    /**
-     * Configure the tables that can be used to prime a channel during a refresh.
-     *
-     * <p>These tables work in conjunction with {@link #setRefreshingChannel(boolean)}. When a
-     * channel is refreshed, it will send a request to each table to warm up the serverside caches
-     * before admitting the new channel into the channel pool.
-     */
-    @BetaApi("Channel priming is not currently stable and may change in the future")
-    public Builder setPrimingTableIds(String... tableIds) {
-      stubSettings.setPrimedTableIds(tableIds);
-      return this;
-    }
-
-    /**
-     * Gets the table ids that will be used to send warmup requests when {@link
-     * #setRefreshingChannel(boolean)} is enabled.
-     */
-    @BetaApi("Channel priming is not currently stable and may change in the future")
-    public List<String> getPrimingTableIds() {
-      return stubSettings.getPrimedTableIds();
-    }
-
-    /**
-     * Returns the underlying settings for making RPC calls. The settings should be changed with
-     * care.
-     */
-    public EnhancedBigtableStubSettings.Builder stubSettings() {
+    public BigtableTableAdminStubSettings.Builder stubSettings() {
       return stubSettings;
     }
 
-    public BigtableDataSettings build() {
-      return new BigtableDataSettings(this);
+    /** Builds an instance of the settings. */
+    public BigtableTableAdminSettings build() throws IOException {
+      return new BigtableTableAdminSettings(this);
     }
   }
 }
